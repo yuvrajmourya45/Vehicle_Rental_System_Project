@@ -197,6 +197,8 @@ export default function ManageOwners() {
               </tbody>
             </table>
           </div>
+        </div>
+
         {/* Mobile Cards */}
         <div className="lg:hidden space-y-4">
           {filteredOwners.map((owner) => (
