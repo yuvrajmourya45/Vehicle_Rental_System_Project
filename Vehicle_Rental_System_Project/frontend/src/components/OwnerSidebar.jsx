@@ -18,19 +18,26 @@ export default function OwnerSidebar() {
 
   return (
     <>
-      <button onClick={() => setIsOpen(!isOpen)} className="md:hidden fixed top-4 left-4 z-50 p-2 bg-purple-600 text-white rounded-lg">
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+      <button 
+        onClick={() => setIsOpen(!isOpen)} 
+        className="md:hidden fixed top-4 left-4 z-50 p-2.5 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 transition"
+      >
+        {isOpen ? <X size={20} /> : <Menu size={20} />}
       </button>
 
-      <div className={`w-56 bg-white h-screen shadow-lg fixed left-0 top-0 z-40 transition-transform flex flex-col ${
+      <div className={`w-64 sm:w-56 bg-white shadow-xl fixed left-0 top-0 z-40 transition-transform flex flex-col h-screen ${
         isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       }`}>
-        <div className="p-4 border-b">
-          <h2 className="text-xl font-bold text-purple-600">Owner Panel</h2>
+        <div className="p-4 sm:p-3 border-b bg-purple-50 flex-shrink-0">
+          <h2 className="text-lg sm:text-xl font-bold text-purple-600">Owner Panel</h2>
         </div>
         
-        <nav className="p-3 flex-1 overflow-y-auto">
-          <Link to="/" className="flex items-center gap-2 px-3 py-2.5 rounded-lg mb-3 bg-purple-50 text-purple-600 hover:bg-purple-100 transition text-sm border border-purple-200">
+        <nav className="flex-1 overflow-y-auto p-3">
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-lg mb-3 bg-purple-50 text-purple-600 hover:bg-purple-100 transition text-sm border border-purple-200"
+            onClick={() => setIsOpen(false)}
+          >
             <Home size={18} />
             <span className="font-medium">Back to Website</span>
           </Link>
@@ -44,32 +51,37 @@ export default function OwnerSidebar() {
                 key={item.path}
                 to={item.path}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-lg mb-2 transition text-sm ${
-                  isActive ? "bg-purple-600 text-white" : "text-gray-700 hover:bg-gray-100"
+                className={`flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-lg mb-2 transition text-sm font-medium ${
+                  isActive ? "bg-purple-600 text-white shadow-md" : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 <Icon size={18} />
-                <span className="font-medium">{item.name}</span>
+                <span>{item.name}</span>
               </Link>
             );
           })}
         </nav>
         
-        <div className="p-3 border-t">
+        <div className="p-3 border-t bg-gray-50 flex-shrink-0">
           <button
             onClick={() => {
               localStorage.clear();
               window.location.href = '/';
             }}
-            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition text-sm w-full text-left"
+            className="flex items-center gap-2 sm:gap-3 px-3 py-2.5 rounded-lg text-red-600 hover:bg-red-50 transition text-sm w-full text-left font-medium"
           >
             <LogOut size={18} />
-            <span className="font-medium">Logout</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
 
-      {isOpen && <div onClick={() => setIsOpen(false)} className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30" />}
+      {isOpen && (
+        <div 
+          onClick={() => setIsOpen(false)} 
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30 transition-opacity" 
+        />
+      )}
     </>
   );
 }

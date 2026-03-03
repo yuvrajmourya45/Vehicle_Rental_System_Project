@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
-import { Search, Loader2, Eye, Ban, CheckCircle, Car, DollarSign, FileText } from "lucide-react";
+import { Search, Loader2, Eye, Ban, CheckCircle, Car, DollarSign, FileText, User, Mail, Phone, X } from "lucide-react";
 import API from "../../services/api";
 import { toast } from 'react-toastify';
 
@@ -89,38 +89,45 @@ export default function ManageOwners() {
   );
 
   if (loading) return (
-    <div className="flex"><AdminSidebar /><div className="md:ml-56 flex-1 flex items-center justify-center h-screen"><Loader2 size={48} className="animate-spin text-purple-600" /></div></div>
+    <div className="flex bg-gray-50">
+      <AdminSidebar />
+      <div className="md:ml-56 flex-1 flex items-center justify-center h-screen">
+        <div className="text-center">
+          <Loader2 size={40} className="animate-spin text-purple-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading owners...</p>
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex">
+    <div className="flex bg-gray-50 min-h-screen">
       <AdminSidebar />
       
-      <div className="md:ml-56 flex-1 bg-gray-50 min-h-screen p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Manage Owners</h1>
-          <p className="text-gray-600">View and manage vehicle owners</p>
+      <div className="md:ml-56 flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="mb-6 sm:mb-8 mt-16 md:mt-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">Manage Owners</h1>
+          <p className="text-sm sm:text-base text-gray-600">View and manage vehicle owners</p>
         </div>
         
-        {/* Search Bar */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 mb-6">
-          <div className="flex items-center border-2 border-gray-200 rounded-xl px-4 py-3 focus-within:border-blue-600 transition">
-            <Search size={20} className="text-gray-400 mr-3" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+          <div className="flex items-center border border-gray-300 rounded-lg px-3 sm:px-4 py-2.5 focus-within:border-purple-500 transition">
+            <Search size={18} className="text-gray-400 mr-2 sm:mr-3 flex-shrink-0" />
             <input 
               type="text" 
               placeholder="Search by name or email..." 
-              className="w-full outline-none"
+              className="w-full outline-none text-sm sm:text-base"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
 
-        {/* Owners Table */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {/* Desktop Table */}
+        <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b-2">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="text-left p-4 font-semibold text-gray-700">Owner</th>
                   <th className="text-left p-4 font-semibold text-gray-700">Contact</th>
@@ -131,94 +138,66 @@ export default function ManageOwners() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOwners.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="text-center py-12 text-gray-500">
-                      No owners found
+                {filteredOwners.map((owner) => (
+                  <tr key={owner._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-purple-100 w-10 h-10 rounded-full flex items-center justify-center">
+                          <span className="font-bold text-purple-600 text-sm">{owner.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">{owner.name}</p>
+                          <p className="text-sm text-gray-500">{owner.email}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">{owner.phone || 'Not provided'}</td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <Car size={16} className="text-blue-600" />
+                        <span className="font-bold text-gray-800">{owner.vehicleCount}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-2">
+                        <DollarSign size={16} className="text-green-600" />
+                        <span className="font-bold text-green-600">₹{owner.earnings}</span>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                        owner.status === "active" 
+                          ? "bg-green-100 text-green-700 border-green-200" 
+                          : "bg-red-100 text-red-700 border-red-200"
+                      }`}>
+                        {owner.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => viewVehicles(owner)} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" title="View Vehicles">
+                          <Car size={16} />
+                        </button>
+                        <button onClick={() => viewEarnings(owner)} className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" title="View Earnings">
+                          <DollarSign size={16} />
+                        </button>
+                        {owner.status === "active" ? (
+                          <button onClick={() => handleStatus(owner._id, 'blocked')} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition" title="Suspend">
+                            <Ban size={16} />
+                          </button>
+                        ) : (
+                          <button onClick={() => handleStatus(owner._id, 'active')} className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" title="Activate">
+                            <CheckCircle size={16} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  filteredOwners.map((owner) => (
-                    <tr key={owner._id} className="border-b hover:bg-gray-50 transition">
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-blue-100 w-10 h-10 rounded-full flex items-center justify-center">
-                            <span className="font-bold text-blue-600">{owner.name.charAt(0).toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-gray-800">{owner.name}</p>
-                            <p className="text-sm text-gray-500">{owner.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <p className="text-sm text-gray-600">{owner.phone || 'N/A'}</p>
-                        <p className="text-xs text-gray-400">{owner.address || 'No address'}</p>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Car size={16} className="text-blue-600" />
-                          <span className="font-bold text-gray-800">{owner.vehicleCount}</span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <DollarSign size={16} className="text-green-600" />
-                          <span className="font-bold text-green-600">${owner.earnings}</span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className={`px-3 py-1 rounded-xl text-xs font-bold border-2 ${
-                          owner.status === "active" 
-                            ? "bg-green-50 text-green-700 border-green-200" 
-                            : "bg-red-50 text-red-700 border-red-200"
-                        }`}>
-                          {owner.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <button 
-                            onClick={() => viewVehicles(owner)}
-                            className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-                            title="View Vehicles"
-                          >
-                            <Car size={16} />
-                          </button>
-                          <button 
-                            onClick={() => viewEarnings(owner)}
-                            className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition"
-                            title="View Earnings"
-                          >
-                            <DollarSign size={16} />
-                          </button>
-                          {owner.status === "active" ? (
-                            <button 
-                              onClick={() => handleStatus(owner._id, 'blocked')} 
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                              title="Suspend Owner"
-                            >
-                              <Ban size={16} />
-                            </button>
-                          ) : (
-                            <button 
-                              onClick={() => handleStatus(owner._id, 'active')} 
-                              className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition"
-                              title="Activate Owner"
-                            >
-                              <CheckCircle size={16} />
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                ))}
               </tbody>
             </table>
           </div>
         </div>
-      </div>
 
       {/* Vehicles Modal */}
       {showVehicles && (
@@ -339,3 +318,86 @@ export default function ManageOwners() {
     </div>
   );
 }
+        {/* Mobile Cards */}
+        <div className="lg:hidden space-y-4">
+          {filteredOwners.map((owner) => (
+            <div key={owner._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-purple-600 text-white flex items-center justify-center font-semibold flex-shrink-0">
+                  {owner.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 text-base sm:text-lg truncate">{owner.name}</h3>
+                  <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                    <Mail size={14} />
+                    <span className="truncate">{owner.email}</span>
+                  </div>
+                  {owner.phone && (
+                    <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                      <Phone size={14} />
+                      <span>{owner.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-blue-50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Car size={16} className="text-blue-600" />
+                    <span className="text-xs text-blue-600 font-medium">VEHICLES</span>
+                  </div>
+                  <p className="text-lg font-bold text-blue-700">{owner.vehicleCount}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-3 text-center">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <DollarSign size={16} className="text-green-600" />
+                    <span className="text-xs text-green-600 font-medium">REVENUE</span>
+                  </div>
+                  <p className="text-lg font-bold text-green-700">₹{owner.earnings}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between mb-4">
+                <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${
+                  owner.status === "active" 
+                    ? "bg-green-100 text-green-700 border-green-200" 
+                    : "bg-red-100 text-red-700 border-red-200"
+                }`}>
+                  {owner.status.toUpperCase()}
+                </span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => viewVehicles(owner)} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                  <Car size={16} />
+                  <span className="hidden sm:inline">Vehicles</span>
+                </button>
+                <button onClick={() => viewEarnings(owner)} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                  <DollarSign size={16} />
+                  <span className="hidden sm:inline">Earnings</span>
+                </button>
+                {owner.status === "active" ? (
+                  <button onClick={() => handleStatus(owner._id, 'blocked')} className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium">
+                    <Ban size={16} />
+                    <span className="hidden sm:inline">Suspend</span>
+                  </button>
+                ) : (
+                  <button onClick={() => handleStatus(owner._id, 'active')} className="flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                    <CheckCircle size={16} />
+                    <span className="hidden sm:inline">Activate</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {filteredOwners.length === 0 && !loading && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+            <User size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">No owners found</h3>
+            <p className="text-gray-600">Try adjusting your search criteria</p>
+          </div>
+        )}
+      </div>

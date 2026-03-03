@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
-import { Search, Loader2, Eye, CheckCircle, XCircle, DollarSign, X } from "lucide-react";
+import { Search, Loader2, Eye, CheckCircle, XCircle, DollarSign, X, Calendar, User, Car } from "lucide-react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
 
@@ -92,20 +92,23 @@ export default function AllBookings() {
   });
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
       <AdminSidebar />
       
-      <div className="md:ml-56 flex-1 bg-gray-100 min-h-screen p-4 md:p-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-4 mt-12 md:mt-0">All Bookings</h1>
+      <div className="md:ml-56 flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="mb-6 sm:mb-8 mt-16 md:mt-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">All Bookings</h1>
+          <p className="text-sm sm:text-base text-gray-600">Manage all vehicle bookings</p>
+        </div>
         
-        <div className="bg-white rounded-xl shadow p-4 mb-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 flex items-center border rounded-lg px-3 py-2">
-              <Search size={20} className="text-gray-400 mr-2" />
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center border border-gray-300 rounded-lg px-3 sm:px-4 py-2.5 focus-within:border-purple-500 transition">
+              <Search size={18} className="text-gray-400 mr-2 sm:mr-3 flex-shrink-0" />
               <input 
                 type="text" 
                 placeholder="Search bookings..." 
-                className="w-full outline-none"
+                className="w-full outline-none text-sm sm:text-base"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -115,9 +118,9 @@ export default function AllBookings() {
                 <button
                   key={status}
                   onClick={() => setFilterStatus(status)}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm transition ${
                     filterStatus === status
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-purple-600 text-white shadow-md'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -128,56 +131,136 @@ export default function AllBookings() {
           </div>
         </div>
 
-        {loading && <div className="flex justify-center py-20"><Loader2 size={48} className="animate-spin text-purple-600" /></div>}
-        {error && <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg">{error}</div>}
+        {loading && (
+          <div className="flex justify-center py-16 sm:py-20">
+            <div className="text-center">
+              <Loader2 size={40} className="animate-spin text-purple-600 mx-auto mb-4" />
+              <p className="text-gray-600">Loading bookings...</p>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 sm:px-6 py-4 rounded-xl text-center">
+            <p className="font-medium mb-2">Error loading bookings</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
 
         {!loading && !error && (
-          <div className="bg-white rounded-xl shadow overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="border-b bg-gray-50">
-                <tr>
-                  <th className="text-left p-4 font-semibold">Vehicle</th>
-                  <th className="text-left p-4 font-semibold">Customer</th>
-                  <th className="text-left p-4 font-semibold">Owner</th>
-                  <th className="text-left p-4 font-semibold">Date</th>
-                  <th className="text-left p-4 font-semibold">Amount</th>
-                  <th className="text-left p-4 font-semibold">Status</th>
-                  <th className="text-left p-4 font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBookings.map((booking) => (
-                  <tr key={booking._id} className="border-b hover:bg-gray-50">
-                    <td className="p-4 font-medium">{booking.vehicle?.name || 'N/A'}</td>
-                    <td className="p-4">{booking.user?.name || 'N/A'}</td>
-                    <td className="p-4">{booking.owner?.name || 'N/A'}</td>
-                    <td className="p-4 text-sm">
-                      <div>{formatDate(booking.startDate)}</div>
-                      <div className="text-gray-500">to {formatDate(booking.endDate)}</div>
-                    </td>
-                    <td className="p-4 font-bold text-purple-600">₹{booking.totalAmount}</td>
-                    <td className="p-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <button onClick={() => viewDetails(booking)} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" title="View Details">
-                          <Eye size={16} />
-                        </button>
-                        {['approved', 'pending'].includes(booking.status) && (
-                          <button onClick={() => handleRefund(booking._id)} className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition" title="Refund">
-                            <DollarSign size={16} />
-                          </button>
-                        )}
+          <>
+            {/* Desktop Table */}
+            <div className="hidden lg:block bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left p-4 font-semibold text-gray-700">Vehicle</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Customer</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Owner</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Date</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Amount</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Status</th>
+                      <th className="text-left p-4 font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((booking) => (
+                      <tr key={booking._id} className="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <td className="p-4 font-medium text-gray-800">{booking.vehicle?.name || 'N/A'}</td>
+                        <td className="p-4 text-gray-600">{booking.user?.name || 'N/A'}</td>
+                        <td className="p-4 text-gray-600">{booking.owner?.name || 'N/A'}</td>
+                        <td className="p-4 text-sm">
+                          <div className="text-gray-800">{formatDate(booking.startDate)}</div>
+                          <div className="text-gray-500">to {formatDate(booking.endDate)}</div>
+                        </td>
+                        <td className="p-4 font-bold text-purple-600">₹{booking.totalAmount}</td>
+                        <td className="p-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(booking.status)}`}>
+                            {booking.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex gap-2">
+                            <button onClick={() => viewDetails(booking)} className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition" title="View Details">
+                              <Eye size={16} />
+                            </button>
+                            {['approved', 'pending'].includes(booking.status) && (
+                              <button onClick={() => handleRefund(booking._id)} className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition" title="Refund">
+                                <DollarSign size={16} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile Cards */}
+            <div className="lg:hidden space-y-4">
+              {filteredBookings.map((booking) => (
+                <div key={booking._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 text-base sm:text-lg truncate">{booking.vehicle?.name || 'N/A'}</h3>
+                      <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                        <User size={14} />
+                        <span className="truncate">{booking.user?.name || 'N/A'}</span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
+                        <Car size={14} />
+                        <span className="truncate">Owner: {booking.owner?.name || 'N/A'}</span>
+                      </div>
+                    </div>
+                    <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-medium border flex-shrink-0 ${getStatusColor(booking.status)}`}>
+                      {booking.status.toUpperCase()}
+                    </span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4 text-sm">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={14} className="text-gray-400" />
+                      <span className="text-gray-600">Start: {formatDate(booking.startDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Calendar size={14} className="text-gray-400" />
+                      <span className="text-gray-600">End: {formatDate(booking.endDate)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div>
+                      <p className="text-lg sm:text-xl font-bold text-purple-600">₹{booking.totalAmount}</p>
+                      <p className="text-xs text-gray-500">Total Amount</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => viewDetails(booking)} className="flex items-center gap-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                        <Eye size={16} />
+                        <span className="hidden sm:inline">Details</span>
+                      </button>
+                      {['approved', 'pending'].includes(booking.status) && (
+                        <button onClick={() => handleRefund(booking._id)} className="flex items-center gap-2 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium">
+                          <DollarSign size={16} />
+                          <span className="hidden sm:inline">Refund</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {filteredBookings.length === 0 && (
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 sm:p-12 text-center">
+                <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">No bookings found</h3>
+                <p className="text-gray-600">Try adjusting your search or filter criteria</p>
+              </div>
+            )}
+          </>
         )}
 
         {showModal && selectedBooking && (
