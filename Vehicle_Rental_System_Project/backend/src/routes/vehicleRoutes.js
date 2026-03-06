@@ -17,7 +17,10 @@ router.post('/upload', protect, authorize('owner'), upload.single('image'), (req
   if (!req.file) {
     return res.status(400).json({ message: 'No file uploaded' });
   }
-  res.json({ imageUrl: `/uploads/${req.file.filename}` });
+  
+  // For Cloudinary, use the secure_url
+  const imageUrl = req.file.path || req.file.secure_url || `/uploads/${req.file.filename}`;
+  res.json({ imageUrl });
 });
 router.post('/', protect, authorize('owner'), upload.single('image'), createVehicle);
 router.get('/:id', getVehicle);

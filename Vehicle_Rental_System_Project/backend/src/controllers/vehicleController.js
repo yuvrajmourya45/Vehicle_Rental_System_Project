@@ -25,10 +25,14 @@ exports.getVehicle = async (req, res) => {
 
 exports.createVehicle = async (req, res) => {
   try {
-    const vehicle = await Vehicle.create({
-      ...req.body,
-      owner: req.user._id
-    });
+    const vehicleData = { ...req.body, owner: req.user._id };
+    
+    // Handle image upload
+    if (req.file) {
+      vehicleData.images = [req.file.path || req.file.secure_url || `/uploads/${req.file.filename}`];
+    }
+    
+    const vehicle = await Vehicle.create(vehicleData);
     res.status(201).json(vehicle);
   } catch (error) {
     res.status(500).json({ message: error.message });
