@@ -4,6 +4,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { Search, Filter, Users, Fuel, Star, Loader2, Grid, List } from "lucide-react";
 import API from "../../services/api";
+import { getImageUrl } from "../../utils/imageUtils";
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState([]);
@@ -28,6 +29,10 @@ export default function Vehicles() {
     try {
       setLoading(true);
       const { data } = await API.get('/vehicles');
+      console.log('Fetched vehicles:', data);
+      data.forEach(vehicle => {
+        console.log(`Vehicle: ${vehicle.name}, Images:`, vehicle.images);
+      });
       setVehicles(data);
       setFilteredVehicles(data);
     } catch (err) {
@@ -194,11 +199,14 @@ export default function Vehicles() {
                     viewMode === 'list' ? 'sm:w-64 sm:flex-shrink-0' : ''
                   }`}>
                     <img 
-                      src={vehicle.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'} 
+                      src={getImageUrl(vehicle.images?.[0])} 
                       alt={vehicle.name} 
                       className={`w-full object-cover ${
                         viewMode === 'list' ? 'h-48 sm:h-full' : 'h-40 sm:h-48'
                       }`}
+                      onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                      }}
                     />
                     <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium text-gray-700">
                       {vehicle.category}

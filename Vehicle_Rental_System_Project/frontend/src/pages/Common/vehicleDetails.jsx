@@ -4,6 +4,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { Loader2 } from "lucide-react";
 import API from "../../services/api";
+import { getImageUrl } from "../../utils/imageUtils";
 
 export default function VehicleDetails() {
   const { id } = useParams();
@@ -42,7 +43,14 @@ export default function VehicleDetails() {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <img src={vehicle.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'} alt={vehicle.name} className="w-full h-96 object-cover" />
+              <img 
+                src={getImageUrl(vehicle.images?.[0])} 
+                alt={vehicle.name} 
+                className="w-full h-96 object-cover"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                }}
+              />
               
               <div className="p-6 bg-gray-50">
                 <div className="grid grid-cols-3 gap-4">

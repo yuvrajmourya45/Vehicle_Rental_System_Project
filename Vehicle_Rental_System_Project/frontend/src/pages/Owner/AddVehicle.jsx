@@ -33,24 +33,36 @@ export default function AddVehicle() {
     setError('');
     setSuccess(false);
     setLoading(true);
+    
     try {
-      let imageUrl = '';
+      const formDataUpload = new FormData();
+      
+      // Add all form fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'images' && formData[key]) {
+          formDataUpload.append(key, formData[key]);
+        }
+      });
+      
+      // Add image file if selected
       if (selectedFile) {
-        const formDataUpload = new FormData();
+        console.log('Adding file:', selectedFile.name, selectedFile.type);
         formDataUpload.append('image', selectedFile);
-        const uploadRes = await API.post('/vehicles/upload', formDataUpload, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        imageUrl = uploadRes.data.imageUrl;
       }
       
-      await API.post('/vehicles', { ...formData, images: imageUrl ? [imageUrl] : [] });
+      console.log('Submitting form data...');
+      const response = await API.post('/vehicles', formDataUpload, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      console.log('Vehicle created:', response.data);
       setSuccess(true);
       setFormData({ name: "", category: "", price: "", seats: "", fuel: "", transmission: "", description: "", images: [] });
       setSelectedFile(null);
       setPreviewUrl('');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add vehicle');
+      console.error('Error creating vehicle:', err);
+      setError(err.response?.data?.message || err.message || 'Failed to add vehicle');
     } finally {
       setLoading(false);
     }
@@ -170,10 +182,10 @@ export default function AddVehicle() {
               <label className="block text-sm font-medium mb-1">Upload Image</label>
               <div className="border-2 border-dashed rounded-lg p-4 text-center">
                 <Upload className="mx-auto mb-1 text-gray-400" size={28} />
-                <p className="text-sm text-gray-600 mb-2">Click to upload vehicle image</p>
+                <p className="text-sm text-gray-600 mb-2">Click to upload vehicle image (JPG, PNG, GIF, WEBP, AVIF)</p>
                 <input 
                   type="file" 
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/avif"
                   onChange={handleFileChange}
                   className="hidden" 
                   id="image-upload"

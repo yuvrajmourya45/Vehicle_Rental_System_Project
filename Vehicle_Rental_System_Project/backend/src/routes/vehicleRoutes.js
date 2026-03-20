@@ -11,6 +11,11 @@ const {
   getMyVehicles
 } = require('../controllers/vehicleController');
 
+// Test route
+router.post('/test', (req, res) => {
+  res.json({ message: 'Vehicle routes working', body: req.body });
+});
+
 router.get('/', getVehicles);
 router.get('/my-vehicles', protect, authorize('owner'), getMyVehicles);
 router.post('/upload', protect, authorize('owner'), upload.single('image'), (req, res) => {

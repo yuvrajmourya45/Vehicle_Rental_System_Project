@@ -17,7 +17,7 @@ if (useCloudinary) {
     cloudinary: cloudinary,
     params: {
       folder: 'vehicle-rentals',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif'],
+      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
       transformation: [{ width: 1200, height: 800, crop: 'limit' }]
     }
   });
@@ -42,13 +42,27 @@ const upload = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif/;
+    if (!file) {
+      return cb(null, true); // Allow no file
+    }
+    
+    const filetypes = /jpeg|jpg|png|gif|webp|avif/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
+    const mimetype = /image\/(jpeg|jpg|png|gif|webp|avif)/.test(file.mimetype);
+    
+    console.log('File validation:', {
+      filename: file.originalname,
+      mimetype: file.mimetype,
+      extname: path.extname(file.originalname).toLowerCase(),
+      extnameTest: extname,
+      mimetypeTest: mimetype
+    });
+    
     if (mimetype && extname) {
       return cb(null, true);
     }
-    cb(new Error('Only images allowed'));
+    
+    cb(new Error(`File type not supported. Only JPEG, JPG, PNG, GIF, WEBP, AVIF are allowed. Received: ${file.mimetype}`));
   }
 });
 

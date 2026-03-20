@@ -11,7 +11,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Test route to check if server is running
+app.get('/', (req, res) => {
+  res.json({ message: 'Vehicle Rental API is running!' });
+});
 
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
@@ -26,4 +33,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/vehicle_ren
   .catch(err => console.log('MongoDB Error:', err));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Static files served from: ${path.join(__dirname, '../uploads')}`);
+});
