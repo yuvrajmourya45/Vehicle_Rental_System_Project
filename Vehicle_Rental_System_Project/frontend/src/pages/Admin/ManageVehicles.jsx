@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import AdminSidebar from "../../components/AdminSidebar";
 import { Search, Check, X, Eye, Loader2 } from "lucide-react";
 import API from "../../services/api";
+import { getImageUrl } from "../../utils/imageUtils";
 
 export default function ManageVehicles() {
   const [vehicles, setVehicles] = useState([]);
@@ -68,9 +69,12 @@ export default function ManageVehicles() {
           {filteredVehicles.map((vehicle) => (
             <div key={vehicle._id} className="bg-white rounded-xl shadow overflow-hidden">
               <img 
-                src={vehicle.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'} 
+                src={getImageUrl(vehicle.images?.[0])} 
                 alt={vehicle.name} 
-                className="w-full h-40 object-cover" 
+                className="w-full h-40 object-cover"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                }}
               />
               <div className="p-4">
                 <div className="flex justify-between items-start mb-2">

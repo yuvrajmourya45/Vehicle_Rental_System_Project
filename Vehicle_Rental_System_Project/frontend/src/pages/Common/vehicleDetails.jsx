@@ -99,17 +99,29 @@ export default function VehicleDetails() {
                     <p className="text-gray-600">Price per day</p>
                     <p className="text-3xl font-bold text-blue-600">${vehicle.price}</p>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                    <p className="text-sm text-green-600 font-semibold">✓ Available</p>
-                    <p className="text-xs text-gray-600 mt-1">Ready to book</p>
-                  </div>
+                  {vehicle.availability === 'rented' ? (
+                    <div className="bg-red-50 p-4 rounded-xl border border-red-200">
+                      <p className="text-sm text-red-600 font-semibold">✗ Not Available</p>
+                      <p className="text-xs text-gray-600 mt-1">Currently booked</p>
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                      <p className="text-sm text-green-600 font-semibold">✓ Available</p>
+                      <p className="text-xs text-gray-600 mt-1">Ready to book</p>
+                    </div>
+                  )}
                 </div>
                 
                 <button 
                   onClick={() => navigate(`/booking/${vehicle._id}`)}
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
+                  disabled={vehicle.availability === 'rented'}
+                  className={`w-full py-3 rounded-xl font-semibold ${
+                    vehicle.availability === 'rented'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
                 >
-                  Book Now
+                  {vehicle.availability === 'rented' ? 'Currently Unavailable' : 'Book Now'}
                 </button>
               </div>
             </div>

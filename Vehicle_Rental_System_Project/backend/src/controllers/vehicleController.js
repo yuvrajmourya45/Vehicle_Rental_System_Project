@@ -1,87 +1,55 @@
-const Vehicle = require('../models/Vehicle');
+const vehicleService = require('../services/vehicleService');
 
-exports.getVehicles = async (req, res) => {
+exports.getVehicles = async (req, res, next) => {
   try {
-    const { category, search } = req.query;
-    let query = {}; // Remove status filter to show all vehicles
-    if (category) query.category = category;
-    if (search) query.name = { $regex: search, $options: 'i' };
-    const vehicles = await Vehicle.find(query).populate('owner', 'name email');
-    console.log(`Found ${vehicles.length} vehicles`);
+    const vehicles = await vehicleService.getAllVehicles(req.query);
     res.json(vehicles);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getVehicle = async (req, res) => {
+exports.getVehicle = async (req, res, next) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id).populate('owner', 'name email phone');
-    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
+    const vehicle = await vehicleService.getVehicleById(req.params.id);
     res.json(vehicle);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.createVehicle = async (req, res) => {
+exports.createVehicle = async (req, res, next) => {
   try {
-    console.log('Creating vehicle with data:', req.body);
-    console.log('File received:', req.file);
-    
-    const vehicleData = { ...req.body, owner: req.user._id };
-    
-    // Handle image upload
-    if (req.file) {
-      const imagePath = req.file.path || req.file.secure_url || `uploads/${req.file.filename}`;
-      vehicleData.images = [imagePath.replace(/\\/g, '/')];
-      console.log('Image path set to:', vehicleData.images[0]);
-    } else {
-      console.log('No file uploaded');
-    }
-    
-    const vehicle = await Vehicle.create(vehicleData);
-    console.log('Vehicle created successfully:', vehicle._id);
+    const vehicle = await vehicleService.createVehicle(req.body, req.user._id, req.file);
     res.status(201).json(vehicle);
   } catch (error) {
-    console.error('Error creating vehicle:', error);
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.updateVehicle = async (req, res) => {
+exports.updateVehicle = async (req, res, next) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
-    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
-    if (vehicle.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Not authorized' });
-    const updated = await Vehicle.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    const vehicle = await vehicleService.updateVehicle(req.params.id, req.user._id, req.body);
+    res.json(vehicle);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.deleteVehicle = async (req, res) => {
+exports.deleteVehicle = async (req, res, next) => {
   try {
-    const vehicle = await Vehicle.findById(req.params.id);
-    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
-    if (vehicle.owner.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Not authorized' });
-    await vehicle.deleteOne();
-    res.json({ message: 'Vehicle deleted' });
+    const result = await vehicleService.deleteVehicle(req.params.id, req.user._id);
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getMyVehicles = async (req, res) => {
+exports.getMyVehicles = async (req, res, next) => {
   try {
-    const vehicles = await Vehicle.find({ owner: req.user._id });
-    console.log(`Found ${vehicles.length} vehicles for owner ${req.user._id}`);
-    vehicles.forEach(v => {
-      console.log(`Vehicle: ${v.name}, Images: ${JSON.stringify(v.images)}`);
-    });
+    const vehicles = await vehicleService.getOwnerVehicles(req.user._id);
     res.json(vehicles);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };

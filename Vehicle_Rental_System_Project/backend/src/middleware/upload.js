@@ -1,3 +1,6 @@
+// ============ Upload Middleware ============
+// Handles image uploads (Cloudinary or Local)
+
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
@@ -12,7 +15,7 @@ const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME &&
 let storage;
 
 if (useCloudinary) {
-  // Cloudinary storage for production
+  // Cloudinary storage (Production)
   storage = new CloudinaryStorage({
     cloudinary: cloudinary,
     params: {
@@ -22,47 +25,34 @@ if (useCloudinary) {
     }
   });
 } else {
-  // Local storage for development
+  // Local storage (Development)
   const uploadsDir = path.join(__dirname, '../../uploads');
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
   
   storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-      cb(null, Date.now() + '-' + file.originalname);
-    }
+    destination: (req, file, cb) => cb(null, uploadsDir),
+    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
   });
 }
 
+// Configure multer with storage and validation
 const upload = multer({ 
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
   fileFilter: (req, file, cb) => {
-    if (!file) {
-      return cb(null, true); // Allow no file
-    }
+    if (!file) return cb(null, true);
     
-    const filetypes = /jpeg|jpg|png|gif|webp|avif/;
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = /image\/(jpeg|jpg|png|gif|webp|avif)/.test(file.mimetype);
-    
-    console.log('File validation:', {
-      filename: file.originalname,
-      mimetype: file.mimetype,
-      extname: path.extname(file.originalname).toLowerCase(),
-      extnameTest: extname,
-      mimetypeTest: mimetype
-    });
+    const allowedTypes = /jpeg|jpg|png|gif|webp|avif/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
     
     if (mimetype && extname) {
       return cb(null, true);
     }
     
-    cb(new Error(`File type not supported. Only JPEG, JPG, PNG, GIF, WEBP, AVIF are allowed. Received: ${file.mimetype}`));
+    cb(new Error(`Invalid file type. Only JPEG, PNG, GIF, WEBP, AVIF allowed. Got: ${file.mimetype}`));
   }
 });
 

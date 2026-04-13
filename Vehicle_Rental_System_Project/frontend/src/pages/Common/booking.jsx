@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import { Calendar, User, Mail, MapPin, Loader2 } from "lucide-react";
 import API from "../../services/api";
 import { toast } from 'react-toastify';
+import { getImageUrl } from "../../utils/imageUtils";
 
 export default function Booking() {
   const { id } = useParams();
@@ -26,10 +27,12 @@ export default function Booking() {
 
   const fetchVehicle = async () => {
     try {
-      console.log('Fetching vehicle with ID:', id);
       const { data } = await API.get(`/vehicles/${id}`);
-      console.log('Vehicle data:', data);
       setVehicle(data);
+      if (data.availability === 'rented') {
+        toast.error('This vehicle is already booked. Redirecting...');
+        setTimeout(() => navigate(-1), 2000);
+      }
     } catch (err) {
       console.error('Error fetching vehicle:', err);
     } finally {
@@ -54,6 +57,10 @@ export default function Booking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (vehicle?.availability === 'rented') {
+      toast.error('This vehicle is no longer available');
+      return;
+    }
     try {
       const bookingData = {
         vehicleId: id,
@@ -89,7 +96,7 @@ export default function Booking() {
           <div className="md:col-span-1">
             <div className="bg-white rounded-xl shadow-lg p-4 sticky top-8">
               <h3 className="font-bold mb-2">Vehicle Details</h3>
-              <img src={vehicle.images?.[0] || 'https://via.placeholder.com/400x300?text=No+Image'} alt="Vehicle" className="w-full h-28 object-cover rounded-lg mb-2" />
+              <img src={getImageUrl(vehicle.images?.[0])} alt="Vehicle" className="w-full h-28 object-cover rounded-lg mb-2" onError={(e) => { e.target.onerror = null; e.target.style.display='none'; }} />
               <h4 className="font-semibold text-sm mb-2">{vehicle.name}</h4>
               <div className="space-y-1 text-xs text-gray-600 mb-2">
                 <div className="flex justify-between">
@@ -154,7 +161,8 @@ export default function Booking() {
                           type="date" 
                           className="outline-none w-full"
                           value={formData.pickupDate}
-                          onChange={(e) => setFormData({...formData, pickupDate: e.target.value})}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setFormData({...formData, pickupDate: e.target.value, returnDate: ''})}
                           required
                         />
                       </div>
@@ -168,6 +176,7 @@ export default function Booking() {
                           type="date" 
                           className="outline-none w-full"
                           value={formData.returnDate}
+                          min={formData.pickupDate || new Date().toISOString().split('T')[0]}
                           onChange={(e) => setFormData({...formData, returnDate: e.target.value})}
                           required
                         />

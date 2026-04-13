@@ -62,7 +62,16 @@ export default function AddVehicle() {
       setPreviewUrl('');
     } catch (err) {
       console.error('Error creating vehicle:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to add vehicle');
+      console.error('Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add vehicle';
+      const errorDetails = err.response?.data?.errors;
+      
+      if (errorDetails && Array.isArray(errorDetails)) {
+        console.error('Validation errors:', errorDetails);
+        setError(`${errorMsg}: ${errorDetails.join(', ')}`);
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,7 +85,14 @@ export default function AddVehicle() {
         <h1 className="text-2xl md:text-3xl font-bold mb-4 mt-12 md:mt-0">Add New Vehicle</h1>
         
         <div className="bg-white rounded-xl shadow p-4 md:p-6 max-w-5xl">
-          {error && <div className="bg-red-50 text-red-600 px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>}
+          {error && (
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-4">
+              <p className="font-medium text-sm mb-1">{error}</p>
+              {error.includes('Validation') && (
+                <p className="text-xs">Please check all required fields are filled correctly.</p>
+              )}
+            </div>
+          )}
           {success && <div className="bg-green-50 text-green-600 px-4 py-2 rounded-lg mb-4 text-sm">Vehicle added successfully!</div>}
           
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -167,15 +183,17 @@ export default function AddVehicle() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1">Description (minimum 10 characters)</label>
               <textarea
                 className="w-full border rounded-lg px-3 py-1.5"
-                rows="2"
-                placeholder="Describe your vehicle..."
+                rows="3"
+                placeholder="Describe your vehicle in detail (at least 10 characters)..."
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
+                minLength={10}
                 required
               ></textarea>
+              <p className="text-xs text-gray-500 mt-1">{formData.description.length}/10 characters</p>
             </div>
 
             <div>

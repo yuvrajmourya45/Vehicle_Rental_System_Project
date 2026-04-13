@@ -1,3 +1,6 @@
+// ============ Cloudinary Configuration ============
+// Cloud storage for vehicle images
+
 const cloudinary = require('cloudinary').v2;
 
 cloudinary.config({

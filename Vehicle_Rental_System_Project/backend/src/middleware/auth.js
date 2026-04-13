@@ -9,33 +9,26 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
-      return res.status(401).json({ message: 'Not authorized' });
+      return res.status(401).json({ message: 'Not authorized, no token' });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+    req.user = await User.findById(decoded.id).select('-password');
     
-    // Handle hardcoded admin
-    if (decoded.id === 'admin_hardcoded') {
-      req.user = {
-        _id: 'admin_hardcoded',
-        name: 'Admin',
-        email: 'yuvrajmourya14@gmail.com',
-        role: 'admin'
-      };
-      return next();
+    if (!req.user) {
+      return res.status(401).json({ message: 'User not found' });
     }
     
-    req.user = await User.findById(decoded.id).select('-password');
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Not authorized' });
+    res.status(401).json({ message: 'Not authorized, token failed' });
   }
 };
 
 exports.authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Not authorized for this role' });
+      return res.status(403).json({ message: `Role ${req.user.role} is not authorized` });
     }
     next();
   };

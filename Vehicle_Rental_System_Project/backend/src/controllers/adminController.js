@@ -1,16 +1,22 @@
+// ============ Admin Controller ============
+// Handles all admin operations
+
 const User = require('../models/User');
 const Vehicle = require('../models/Vehicle');
 const Booking = require('../models/Booking');
 const Payment = require('../models/Payment');
 
-exports.getDashboardStats = async (req, res) => {
+// Get dashboard statistics
+exports.getDashboardStats = async (req, res, next) => {
   try {
-    const totalUsers = await User.countDocuments({ role: 'user' });
-    const totalOwners = await User.countDocuments({ role: 'owner' });
-    const totalVehicles = await Vehicle.countDocuments();
-    const totalRevenue = await Booking.aggregate([
-      { $match: { status: 'approved' } },
-      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+    const [totalUsers, totalOwners, totalVehicles, totalRevenue] = await Promise.all([
+      User.countDocuments({ role: 'user' }),
+      User.countDocuments({ role: 'owner' }),
+      Vehicle.countDocuments(),
+      Booking.aggregate([
+        { $match: { status: 'approved' } },
+        { $group: { _id: null, total: { $sum: '$totalAmount' } } }
+      ])
     ]);
 
     res.json({
@@ -20,91 +26,88 @@ exports.getDashboardStats = async (req, res) => {
       totalRevenue: totalRevenue[0]?.total || 0
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getAllUsers = async (req, res) => {
+// Get users by role (reusable function)
+const getUsersByRole = (role) => async (req, res, next) => {
   try {
-    const users = await User.find({ role: 'user', isDeleted: false }).select('-password');
+    const query = { role };
+    if (role === 'user') query.isDeleted = false;
+    
+    const users = await User.find(query).select('-password');
     res.json(users);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getUserBookings = async (req, res) => {
+// Get all users
+exports.getAllUsers = getUsersByRole('user');
+
+// Get all owners
+exports.getAllOwners = getUsersByRole('owner');
+
+// Get user booking history
+exports.getUserBookings = async (req, res, next) => {
   try {
     const bookings = await Booking.find({ user: req.params.id })
       .populate('vehicle', 'name brand model')
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.deleteUser = async (req, res) => {
+// Delete user (soft delete)
+exports.deleteUser = async (req, res, next) => {
   try {
     await User.findByIdAndUpdate(req.params.id, { isDeleted: true });
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getAllOwners = async (req, res) => {
+// Update user/owner status
+const updateUserStatus = async (req, res, next) => {
   try {
-    const owners = await User.find({ role: 'owner' }).select('-password');
-    res.json(owners);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.updateUserStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { status },
-      { new: true }
+      { status: req.body.status },
+      { new: true, runValidators: true }
     ).select('-password');
+    
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.updateOwnerStatus = async (req, res) => {
-  try {
-    const { status } = req.body;
-    const owner = await User.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    ).select('-password');
-    res.json(owner);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
+exports.updateUserStatus = updateUserStatus;
+exports.updateOwnerStatus = updateUserStatus;
 
-exports.verifyVehicle = async (req, res) => {
+// Verify vehicle
+exports.verifyVehicle = async (req, res, next) => {
   try {
-    const { status } = req.body;
     const vehicle = await Vehicle.findByIdAndUpdate(
       req.params.id,
-      { status },
-      { new: true }
+      { status: req.body.status },
+      { new: true, runValidators: true }
     );
+    
+    if (!vehicle) return res.status(404).json({ message: 'Vehicle not found' });
     res.json(vehicle);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.getReports = async (req, res) => {
+// Get monthly revenue reports
+exports.getReports = async (req, res, next) => {
   try {
     const monthlyRevenue = await Payment.aggregate([
       { $match: { status: 'completed' } },
@@ -120,33 +123,38 @@ exports.getReports = async (req, res) => {
 
     res.json({ monthlyRevenue });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.updateBookingStatus = async (req, res) => {
+// Update booking status
+exports.updateBookingStatus = async (req, res, next) => {
   try {
-    const { status } = req.body;
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { status },
+      { status: req.body.status },
       { new: true }
-    ).populate('vehicle', 'name').populate('user', 'name').populate('owner', 'name');
+    ).populate('vehicle user owner', 'name');
+    
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
     res.json(booking);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-exports.refundBooking = async (req, res) => {
+// Refund booking
+exports.refundBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
       { status: 'cancelled', paymentStatus: 'refunded' },
       { new: true }
     );
+    
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
     res.json({ message: 'Booking refunded successfully', booking });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
