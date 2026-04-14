@@ -1,6 +1,7 @@
 const express = require('express');
 const Driver = require('../models/Driver');
 const { protect, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const router = express.Router();
 
 router.get('/', protect, authorize('owner'), async (req, res) => {
@@ -12,20 +13,28 @@ router.get('/', protect, authorize('owner'), async (req, res) => {
   }
 });
 
-router.post('/', protect, authorize('owner'), async (req, res) => {
+router.post('/', protect, authorize('owner'), upload.single('photo'), async (req, res) => {
   try {
-    const driver = await Driver.create({ ...req.body, owner: req.user._id });
+    const driverData = { ...req.body, owner: req.user._id };
+    if (req.file) {
+      driverData.photo = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
+    }
+    const driver = await Driver.create(driverData);
     res.status(201).json(driver);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-router.put('/:id', protect, authorize('owner'), async (req, res) => {
+router.put('/:id', protect, authorize('owner'), upload.single('photo'), async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    if (req.file) {
+      updateData.photo = req.file.secure_url || req.file.path || `/uploads/${req.file.filename}`;
+    }
     const driver = await Driver.findOneAndUpdate(
       { _id: req.params.id, owner: req.user._id },
-      req.body,
+      updateData,
       { new: true }
     );
     if (!driver) return res.status(404).json({ message: 'Driver not found' });

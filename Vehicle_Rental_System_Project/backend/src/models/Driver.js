@@ -5,6 +5,7 @@ const driverSchema = new mongoose.Schema({
   phone: { type: String, required: true },
   licenseNumber: { type: String, required: true },
   experience: { type: Number, required: true },
+  photo: { type: String, default: '' },
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isAvailable: { type: Boolean, default: true }
 }, { timestamps: true });
