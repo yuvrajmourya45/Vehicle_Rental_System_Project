@@ -42,11 +42,15 @@ const loginUser = async (email, password) => {
   const user = await User.findOne({ email });
   
   if (!user || !(await user.comparePassword(password))) {
-    throw new Error('Invalid credentials');
+    const err = new Error('Invalid credentials');
+    err.statusCode = 401;
+    throw err;
   }
 
   if (user.status === 'blocked') {
-    throw new Error('Account is blocked');
+    const err = new Error('Account is blocked');
+    err.statusCode = 401;
+    throw err;
   }
 
   return {
