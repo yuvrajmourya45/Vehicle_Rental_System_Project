@@ -21,7 +21,12 @@ export default function Signup() {
       if (data.role === 'owner') navigate('/owner/dashboard');
       else navigate('/user/home');
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed');
+      const errData = err.response?.data;
+      if (errData?.errors?.length > 0) {
+        setError(errData.errors.join(', '));
+      } else {
+        setError(errData?.message || 'Signup failed');
+      }
     } finally {
       setLoading(false);
     }
