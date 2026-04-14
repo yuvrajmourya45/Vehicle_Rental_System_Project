@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: (process.env.REACT_APP_API_URL || 'http://localhost:5000') + '/api',
   headers: {
     'Content-Type': 'application/json'
   }
@@ -20,7 +20,6 @@ API.interceptors.response.use(
   (error) => {
     console.error('API Error:', error.response?.status, error.response?.data);
     if (error.response?.status === 401) {
-      // Only logout if not on login page
       if (!window.location.pathname.includes('/login')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
