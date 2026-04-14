@@ -15,7 +15,11 @@ const registerUser = async (userData) => {
   const { name, email, password, role } = userData;
 
   const existingUser = await User.findOne({ email });
-  if (existingUser) throw new Error('User already exists');
+  if (existingUser) {
+    const err = new Error('User already exists with this email');
+    err.statusCode = 400;
+    throw err;
+  }
 
   const user = await User.create({
     name,
