@@ -26,9 +26,10 @@ const createVehicle = async (vehicleData, ownerId, file) => {
   const data = { ...vehicleData, owner: ownerId };
   
   if (file) {
-    // For local storage, use only the filename
-    const imagePath = file.filename || file.path || file.secure_url;
-    data.images = [`uploads/${imagePath}`];
+    // Cloudinary returns file.path as full URL, local storage returns filename
+    const imagePath = file.secure_url || file.path;
+    const isFullUrl = imagePath && imagePath.startsWith('http');
+    data.images = [isFullUrl ? imagePath : `uploads/${file.filename}`];
   }
   
   return await Vehicle.create(data);
