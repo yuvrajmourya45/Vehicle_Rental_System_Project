@@ -1,213 +1,253 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import UserSidebar from "../../components/UserSidebar";
-import { Calendar, MapPin, Loader2, Car, CreditCard, Wallet, Smartphone, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, MapPin, Loader2, Car, Search, ChevronRight, Star, Headphones } from "lucide-react";
 import API from "../../services/api";
 import { getImageUrl } from "../../utils/imageUtils";
 
 export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [expanded, setExpanded] = useState(null);
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState("active");
+  const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => { fetchBookings(); }, []);
 
   const fetchBookings = async () => {
     try {
-      setLoading(true);
-      const { data } = await API.get('/bookings/my-bookings');
-      console.log('RAW bookings:', JSON.stringify(data.map(b => ({ name: b.vehicle?.name, images: b.vehicle?.images }))));
+      const { data } = await API.get("/bookings/my-bookings");
       setBookings(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load bookings');
+      setError(err.response?.data?.message || "Failed to load bookings");
     } finally {
       setLoading(false);
     }
   };
 
   const formatDate = (date) =>
-    new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const getStatusConfig = (status) => {
-    const map = {
-      approved: { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500', label: 'Approved' },
-      completed: { bg: 'bg-blue-100', text: 'text-blue-700', dot: 'bg-blue-500', label: 'Completed' },
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500', label: 'Pending' },
-      active: { bg: 'bg-purple-100', text: 'text-purple-700', dot: 'bg-purple-500', label: 'Active' },
-      cancelled: { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500', label: 'Cancelled' },
-      rejected: { bg: 'bg-red-100', text: 'text-red-700', dot: 'bg-red-500', label: 'Rejected' },
-    };
-    return map[status] || map.pending;
-  };
-
-  const getPaymentIcon = (method) => {
-    if (method === 'card') return <CreditCard size={14} className="text-blue-600" />;
-    if (method === 'upi') return <Smartphone size={14} className="text-purple-600" />;
-    return <Wallet size={14} className="text-green-600" />;
-  };
+    new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   const getDays = (start, end) =>
     Math.ceil((new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24));
+
+  const getTabBookings = () => {
+    const now = new Date();
+    let filtered = bookings;
+    if (tab === "active") filtered = bookings.filter(b => b.status === "approved" || b.status === "active" || b.status === "pending");
+    else if (tab === "upcoming") filtered = bookings.filter(b => new Date(b.startDate) > now && b.status !== "rejected");
+    else if (tab === "past") filtered = bookings.filter(b => b.status === "completed" || b.status === "rejected");
+    if (search) filtered = filtered.filter(b => b.vehicle?.name?.toLowerCase().includes(search.toLowerCase()) || b.location?.toLowerCase().includes(search.toLowerCase()));
+    return filtered;
+  };
+
+  const getStatusBadge = (status) => {
+    const map = {
+      approved:  { label: "IN PROGRESS", cls: "bg-green-500 text-white" },
+      active:    { label: "IN PROGRESS", cls: "bg-green-500 text-white" },
+      pending:   { label: "PENDING APPROVAL", cls: "bg-pink-500 text-white" },
+      completed: { label: "COMPLETED", cls: "bg-blue-500 text-white" },
+      rejected:  { label: "REJECTED", cls: "bg-red-500 text-white" },
+    };
+    return map[status] || { label: status?.toUpperCase(), cls: "bg-gray-400 text-white" };
+  };
+
+  const filtered = getTabBookings();
+
+  if (loading) return (
+    <div className="flex">
+      <UserSidebar />
+      <div className="md:ml-56 flex-1 flex items-center justify-center h-screen bg-gray-50">
+        <Loader2 size={36} className="animate-spin text-green-600" />
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex bg-gray-50 min-h-screen">
       <UserSidebar />
 
-      <div className="md:ml-56 flex-1 p-4 md:p-8">
-        <div className="mb-8 mt-16 md:mt-0">
-          <h1 className="text-3xl font-bold text-gray-800 mb-1">My Bookings</h1>
-          <p className="text-gray-500">Track and manage your vehicle reservations</p>
+      <div className="md:ml-56 flex-1 p-6 mt-14 md:mt-0">
+
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 border-l-4 border-green-500 pl-3">My Bookings</h1>
+          <p className="text-gray-400 text-sm mt-1 pl-4">Track and manage your vehicle reservations</p>
         </div>
 
-        {loading && (
-          <div className="flex justify-center py-20">
-            <Loader2 size={48} className="animate-spin text-blue-600" />
+        {/* Tabs + Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1 w-fit">
+            {["active", "upcoming", "past"].map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium capitalize transition ${
+                  tab === t ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
-        )}
-        {error && (
-          <div className="bg-red-50 text-red-600 px-6 py-4 rounded-xl border border-red-200">{error}</div>
-        )}
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 w-full sm:w-56">
+            <Search size={14} className="text-gray-400" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search reservations..."
+              className="text-sm outline-none w-full text-gray-600 placeholder-gray-400"
+            />
+          </div>
+        </div>
 
-        {!loading && !error && bookings.length === 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 text-center">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Car size={48} className="text-blue-400" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-700 mb-2">No bookings yet</h3>
-            <p className="text-gray-500 mb-6">Start exploring vehicles to make your first booking</p>
+        {error && <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl border border-red-200 mb-4 text-sm">{error}</div>}
+
+        {/* Booking Cards */}
+        {filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
+            <Car size={40} className="mx-auto text-gray-300 mb-3" />
+            <p className="text-gray-500 font-medium mb-1">No bookings found</p>
+            <p className="text-gray-400 text-sm mb-4">Try a different tab or make a new reservation</p>
             <button
-              onClick={() => navigate('/vehicles')}
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition"
+              onClick={() => navigate("/vehicles")}
+              className="px-5 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition"
             >
               Browse Vehicles
             </button>
           </div>
-        )}
+        ) : (
+          <div className="space-y-4 mb-6">
+            {filtered.map((booking) => {
+              const badge = getStatusBadge(booking.status);
+              const days = getDays(booking.startDate, booking.endDate);
 
-        <div className="grid gap-5">
-          {bookings.map((booking) => {
-            const status = getStatusConfig(booking.status);
-            const days = getDays(booking.startDate, booking.endDate);
-            const isOpen = expanded === booking._id;
+              return (
+                <div key={booking._id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
+                  <div className="flex flex-col md:flex-row">
 
-            return (
-              <div key={booking._id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
-                {/* Main Row */}
-                <div className="flex flex-col md:flex-row gap-0">
-                  {/* Vehicle Image */}
-                  <div className="md:w-48 h-40 md:h-auto flex-shrink-0 bg-gray-100 flex items-center justify-center">
-                    <img
-                      src={getImageUrl(booking.vehicle?.images?.[0])}
-                      alt={booking.vehicle?.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.style.display = 'none';
-                        e.target.parentNode.innerHTML = `<div class="w-full h-full flex flex-col items-center justify-center bg-gray-100"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><p class="text-xs text-gray-400 mt-2">${booking.vehicle?.name || 'Vehicle'}</p></div>`;
-                      }}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 p-5">
-                    <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-bold text-gray-800">
-                            {booking.vehicle?.name || 'Vehicle'}
-                          </h3>
-                          <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${status.bg} ${status.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`}></span>
-                            {status.label}
-                          </span>
+                    {/* Image with status badge */}
+                    <div className="relative md:w-64 h-48 md:h-auto flex-shrink-0">
+                      {booking.vehicle?.images?.[0] ? (
+                        <img
+                          src={getImageUrl(booking.vehicle.images[0])}
+                          alt={booking.vehicle?.name}
+                          className="w-full h-full object-cover"
+                          onError={e => { e.target.onerror = null; e.target.src = ""; }}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <Car size={40} className="text-gray-300" />
                         </div>
+                      )}
+                      <span className={`absolute top-3 left-3 text-xs font-bold px-2.5 py-1 rounded-full ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                    </div>
 
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-lg text-xs">
-                            <Calendar size={13} className="text-blue-600" />
-                            <span className="text-gray-700 font-medium">
-                              {formatDate(booking.startDate)} → {formatDate(booking.endDate)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg text-xs">
-                            <span className="text-gray-500">🗓</span>
-                            <span className="text-gray-700 font-medium">{days} day{days > 1 ? 's' : ''}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 bg-green-50 px-3 py-1.5 rounded-lg text-xs">
-                            <MapPin size={13} className="text-green-600" />
-                            <span className="text-gray-700 font-medium">{booking.location}</span>
+                    {/* Content */}
+                    <div className="flex-1 p-5">
+                      <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-3">
+                        <div>
+                          <h3 className="text-lg font-bold text-gray-900">{booking.vehicle?.name || "Vehicle"}</h3>
+                          <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
+                            <MapPin size={12} />
+                            <span>{booking.location || "Location not specified"}</span>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            {getPaymentIcon(booking.paymentMethod)}
-                            <span className="capitalize">{booking.paymentMethod || 'card'}</span>
-                          </div>
-                          <span>•</span>
-                          <span className={`font-medium ${booking.paymentStatus === 'paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                            {booking.paymentStatus === 'paid' ? '✓ Paid' : '⏳ Payment Pending'}
-                          </span>
-                          {booking.needDriver && (
-                            <>
-                              <span>•</span>
-                              <span className="text-blue-600">🚗 Driver Included</span>
-                            </>
-                          )}
+                        <div className="text-right">
+                          <p className="text-xs text-gray-400 font-medium">TOTAL PRICE</p>
+                          <p className="text-2xl font-bold text-gray-900">₹{booking.totalAmount?.toLocaleString()}</p>
                         </div>
                       </div>
 
-                      {/* Amount + Toggle */}
-                      <div className="flex md:flex-col items-center md:items-end gap-3">
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400 mb-0.5">Total Amount</p>
-                          <p className="text-2xl font-bold text-blue-600">₹{booking.totalAmount?.toFixed(2)}</p>
+                      {/* Schedule */}
+                      <div className="flex items-center gap-3 bg-gray-50 rounded-xl px-4 py-2.5 mb-3 w-fit">
+                        <Calendar size={14} className="text-green-600" />
+                        <span className="text-xs font-medium text-gray-700">
+                          {formatDate(booking.startDate)}
+                        </span>
+                        <span className="text-xs text-gray-400">→</span>
+                        <span className="text-xs font-medium text-gray-700">
+                          {formatDate(booking.endDate)}
+                        </span>
+                        <span className="text-xs text-gray-400 ml-1">({days} day{days > 1 ? "s" : ""})</span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                      </div>
+
+                      {/* Meta row */}
+                      <div className="flex flex-wrap gap-4 mb-4 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${booking.paymentStatus === "paid" ? "bg-green-500" : "bg-yellow-400"}`} />
+                          <span className="text-gray-600 font-medium">
+                            {booking.paymentStatus === "paid" ? "Payment Confirmed" : "Payment Pending"}
+                          </span>
                         </div>
-                        <button
-                          onClick={() => setExpanded(isOpen ? null : booking._id)}
-                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 transition"
-                        >
-                          {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          {isOpen ? 'Less' : 'Details'}
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-gray-600 font-medium">
+                            {booking.needDriver ? "Driver Included" : "Self Drive"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-3">
+                        {(booking.status === "approved" || booking.status === "active") && (
+                          <button className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                            Extend Rental
+                          </button>
+                        )}
+                        {booking.status === "pending" && (
+                          <button className="flex-1 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold py-2.5 rounded-xl transition">
+                            Modify Booking
+                          </button>
+                        )}
+                        <button className="px-5 py-2.5 border border-gray-200 text-gray-600 text-sm font-semibold rounded-xl hover:bg-gray-50 transition">
+                          Details
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        )}
 
-                {/* Expanded Details */}
-                {isOpen && (
-                  <div className="border-t border-gray-100 bg-gray-50 px-5 py-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Vehicle Price/day</p>
-                        <p className="font-semibold text-gray-700">₹{booking.vehicle?.price}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Driver Charges</p>
-                        <p className="font-semibold text-gray-700">
-                          {booking.driverCharges > 0 ? `₹${booking.driverCharges}` : 'None'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Late Penalty</p>
-                        <p className={`font-semibold ${booking.latePenalty > 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                          {booking.latePenalty > 0 ? `₹${booking.latePenalty}` : 'None'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Booking ID</p>
-                        <p className="font-mono text-xs text-gray-600 truncate">{booking._id}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* Bottom Info Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Star size={16} className="text-green-600" />
+              <p className="text-sm font-bold text-gray-800">Fleet Loyalty</p>
+            </div>
+            <p className="text-xs text-gray-500">You've reached Level 4. Next booking qualifies for free executive upgrade.</p>
+          </div>
+          <div className="bg-pink-50 rounded-2xl p-4 border border-pink-100">
+            <div className="flex items-center gap-2 mb-2">
+              <Headphones size={16} className="text-pink-600" />
+              <p className="text-sm font-bold text-gray-800">24/7 Concierge</p>
+            </div>
+            <p className="text-xs text-gray-500">Your dedicated fleet manager is available for route planning and delivery adjustments.</p>
+          </div>
+          <div className="bg-white rounded-2xl p-4 border border-gray-100 flex items-center justify-between hover:shadow-sm transition cursor-pointer" onClick={() => navigate("/user/bookings")}>
+            <p className="text-sm font-bold text-green-600">View Past Reservation History</p>
+            <ChevronRight size={16} className="text-green-600" />
+          </div>
         </div>
+
+        {/* New Reservation Button */}
+        <div className="mt-6">
+          <button
+            onClick={() => navigate("/vehicles")}
+            className="w-full sm:w-auto px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl text-sm transition shadow-sm"
+          >
+            + New Reservation
+          </button>
+        </div>
+
       </div>
     </div>
   );
